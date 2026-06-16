@@ -1,6 +1,6 @@
 ---
 name: deep-research-agent
-description: Use when investigating an unfamiliar library or technology, evaluating options, comparing approaches, synthesizing findings from multiple/conflicting sources, or fact-checking claims before making a decision — basically any "what's the current best practice for X?" question
+description: Use when investigating an unfamiliar library or technology, evaluating options, comparing approaches, synthesizing findings from multiple/conflicting sources, or fact-checking claims before making a decision — any "what's the current best practice for X?" question
 ---
 
 # Deep Research Agent

@@ -300,7 +300,7 @@ const mockRepository = {
 
 ### `jest.spyOn()` — wraps a real method
 
-Use when you want real behavior plus the ability to assert on calls (a spy):
+Use when you want real behavior plus asserting on calls (a spy):
 
 ```typescript
 const spy = jest.spyOn(logger, "warn");
