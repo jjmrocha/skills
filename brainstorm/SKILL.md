@@ -1,13 +1,13 @@
 ---
 name: brainstorm
-description: "Use when user presents a vague idea, unclear requirements, or wants to explore possibilities before building. Triggers on 'I want to build X', ambiguous feature requests, concept validation, or any time implementation should not start without first understanding what is being built."
+description: "Use when user presents a vague idea, unclear requirements, or wants to explore possibilities before building. Triggers on 'I want to build X', ambiguous feature requests, concept validation, or any time implementation should not start without understanding what is being built."
 ---
 
 # Brainstorm — Socratic Requirements Discovery
 
-Turn ambiguous ideas into concrete, validated designs through guided Socratic dialogue. Shared clarity before any implementation.
+Turn ambiguous ideas into concrete, validated designs through Socratic dialogue. Shared clarity before any implementation.
 
-**Hard rule:** Do NOT suggest implementation, write code, or scaffold anything until a design has been presented and the user has explicitly approved it. Applies to every project regardless of perceived simplicity.
+**Hard rule:** Do NOT suggest implementation, write code, or scaffold anything until a design is presented and the user explicitly approves it. Applies regardless of perceived simplicity.
 
 **If the conversation was compacted, re-invoke this skill before continuing.**
 
@@ -22,7 +22,7 @@ Turn ambiguous ideas into concrete, validated designs through guided Socratic di
 
 ## Steps
 
-1. **Explore context & conventions** — read existing architecture and prior decisions. For any capability that overlaps with what's already in the repo, identify the libraries, patterns, and file/module layout in use. The design aligns with what exists unless divergence is explicitly stated and justified. **If `kb_path` is configured, load `knowledge-base` first** — it owns wiki/plan/helper/pattern reads.
+1. **Explore context & conventions** — read existing architecture and prior decisions. For any capability overlapping what's already in the repo, identify the libraries, patterns, and file/module layout in use. The design aligns with what exists unless divergence is explicitly stated and justified. **If `kb_path` is configured, load `knowledge-base` first** — it owns wiki/plan/helper/pattern reads.
 2. **Assess scope** — if the idea spans multiple independent systems, decompose first; each sub-project gets its own spec → plan → implementation cycle.
 3. **Ask clarifying questions** — one per message, Socratic style (see below).
 4. **Propose 2-3 approaches** — with trade-offs; lead with your recommendation and reasoning. For cross-domain work, load specialists from `using-software-specialists` (architect for system shape, security for trust boundaries, requirements-analyst for hidden assumptions) so trade-offs cover more than the happy path.
@@ -36,7 +36,7 @@ Turn ambiguous ideas into concrete, validated designs through guided Socratic di
 
 One question per message. Prefer multiple-choice when the options are known. Let each answer shape the next question. Ask "why" when the stated need and the real need might differ.
 
-**Recommend, don't interrogate.** For each question, lead with your recommended answer based on the context you've already gathered. Frame it as *"I'd default to X because Y — does that fit?"* rather than *"What should we do about X?"*. The user reacts; they don't have to generate. Switch to open-ended only when you genuinely have no basis to recommend.
+**Recommend, don't interrogate.** For each question, lead with your recommended answer based on context already gathered. Frame it as *"I'd default to X because Y — does that fit?"* rather than *"What should we do about X?"*. The user reacts; they don't have to generate. Switch to open-ended only when you genuinely have no basis to recommend.
 
 **Check the repo before asking.** If a question can be answered from the codebase or KB, answer it yourself and state your finding — don't ask the user to recite what's discoverable. Only escalate to a question when the answer isn't in the artifacts you can read.
 

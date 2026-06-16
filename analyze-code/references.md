@@ -1,6 +1,6 @@
 # analyze-code — references
 
-Heavy reference material for the `analyze-code` skill. Load on demand from Step 6 or when a finding needs the detail.
+Heavy reference material for `analyze-code`. Load on demand from Step 6 or when a finding needs the detail.
 
 ## Tooling discovery paths
 

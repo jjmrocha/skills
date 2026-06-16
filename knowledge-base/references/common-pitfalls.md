@@ -20,7 +20,7 @@ summary: "yes — the cancellable window"
 
 ## "Quick lookup" temptation
 
-There is no quick-lookup exemption. The same drift that produces consequential bugs produces casual misinformation, and you can rarely tell from the question alone which one the user is about to act on. Open the cited code every time — even for a one-line answer.
+There is no quick-lookup exemption. The same drift that produces consequential bugs produces casual misinformation, and the question alone rarely reveals which one the user is about to act on. Open the cited code every time — even for a one-line answer.
 
 ## Coverage on multi-file ingest
 

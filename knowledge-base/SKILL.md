@@ -46,7 +46,7 @@ Two parallel entry points: `wiki/index.md` and `plans/index.md`. No KB-root inde
 
 ## Operating Modes
 
-Mode is determined by the user's verb.
+The user's verb determines the mode.
 
 | Mode | Trigger phrases | Discipline |
 |------|-----------------|------------|

@@ -18,7 +18,7 @@ If `acquire` exits non-zero, **stop**, surface the holder's PID and acquired-at 
 
 Acquire the write lock; release on summary success.
 
-1. **Enumerate the full source set, then read every file.** If the source resolves to more than one file, list every file first (`git ls-files`, `find <dir> -type f`, archive listing). Then read each. **No sampling.** The only allowed exclusions are files the user explicitly named out-of-scope, or boilerplate with no system surface (lockfiles, generated code, vendored deps, binary assets) — and you must announce any exclusion in the summary.
+1. **Enumerate the full source set, then read every file.** If the source resolves to more than one file, list every file first (`git ls-files`, `find <dir> -type f`, archive listing). Then read each. **No sampling.** The only allowed exclusions are files the user explicitly named out-of-scope, or boilerplate with no system surface (lockfiles, generated code, vendored deps, binary assets) — announce any exclusion in the summary.
 2. Identify the destination: which repo, which subfolder under `wiki/<repo>/`, or `plans/`. Ask only when the source is genuinely ambiguous; for clean sources, pick the best fit and surface the choice in the summary.
 3. For each page: create or update; add `[[wiki-links]]`; set `sources:` (listing **every** contributing file) and `last_updated:`.
 4. **Cross-repo linking.** Forward-link the consumer pages you wrote, and backfill other repos' consumer pages that the surfaces you just documented now satisfy — see [Cross-repo linking](#cross-repo-linking).

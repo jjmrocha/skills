@@ -31,7 +31,7 @@ The mismatch between `orders.md` (4 status values) and `src/orders.py` (2 status
 
 ## Running the suite
 
-Dispatch all five scenarios in parallel to fresh subagents. Each subagent receives the new SKILL.md path in its prompt and is told to apply it. Reset the fixture between baseline and verify runs (T2 and T3 mutate the KB).
+Dispatch T1–T5 in parallel to fresh subagents; run T6 separately (its own fixture, two sequential sessions — see the T6 section). Each subagent receives the new SKILL.md path in its prompt and is told to apply it. Reset the fixture between baseline and verify runs (T2 and T3 mutate the KB).
 
 ## T1 — Query discipline (wiki ↔ code disagreement)
 

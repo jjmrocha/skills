@@ -5,7 +5,7 @@ description: "Use when checking, reviewing, or auditing code style, formatting, 
 
 # Google Style Checker
 
-Reviews code against Google's official style guidelines for **formatting and naming only**. Does not check logic, architecture, or code quality (SOLID, smells). Does not auto-fix — reports violations for the developer to address.
+Reviews code against Google's official style guidelines for **formatting and naming only**. Does not check logic, architecture, or code quality (SOLID, smells). Does not auto-fix — reports violations to fix.
 
 **Supported languages:** Go, Java, Python, JavaScript, TypeScript, Shell, Markdown.
 
@@ -33,7 +33,7 @@ If no supported-language files are detected, report this and exit.
 
 ### Step 2: Advisor mode (optional)
 
-If the user asks a style question rather than requesting a scan (e.g., "how should I name constants in Go?"), answer directly from the loaded reference. You can also answer the question and then offer to scan relevant files.
+If the user asks a style question rather than requesting a scan (e.g., "how should I name constants in Go?"), answer directly from the loaded reference. You can also answer, then offer to scan relevant files.
 
 ### Step 3: Scan for violations
 
@@ -85,7 +85,7 @@ List any files with zero violations. Omit this section if all files have violati
 ## Tips
 
 - If a file has many violations of the same rule, report the first 3 occurrences and note "and N more".
-- Go projects: `gofmt` compliance is the source of truth — note if running `gofmt` would fix issues automatically.
+- Go projects: `gofmt` compliance is the source of truth — note if running `gofmt` would auto-fix issues.
 - See [expected_outputs/sample-report.md](expected_outputs/sample-report.md) for a full example.
 
 ## Common Mistakes

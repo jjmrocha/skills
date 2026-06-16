@@ -9,7 +9,7 @@ description: Use when you have a question about this codebase or what we've docu
 
 ## Where the answer lives
 
-The answer is always in the code — read it (preferably with serena) to get and confirm it. **If `kb_path` is configured, load `knowledge-base` first** to speed the search: use it to locate the right surfaces and files faster, then read the code to validate.
+The answer is always in the code — read it (preferably with serena) to get and confirm it. **If `kb_path` is configured, load `knowledge-base` first** to locate the right surfaces and files faster, then read the code to validate.
 
 Code is ground truth. When the KB and code disagree, the code wins — report the drift, and fix the KB.
 

@@ -1,12 +1,12 @@
 # Java Unit Test Reference
 
-Prescriptive guide for writing unit tests in Java. An agent following this should produce tests that read consistently and follow the universal principles in `SKILL.md`.
+Prescriptive guide for writing unit tests in Java. Following it produces tests that read consistently and follow the universal principles in `SKILL.md`.
 
 **Stack**: JUnit Jupiter 5+ • AssertJ • Mockito. No Hamcrest. No PowerMock. No JUnit 4.
 
 > **Always check the project's existing tests first.** If they differ from this reference (different assertion library, different mock style, `@Mock` annotations, etc.), follow them. This reference is the default for greenfield code.
 
-This reference follows the **FIRST-U** principles (Fast, Isolated, Repeatable, Self-validating, Timely, Understandable) defined in §4 of the main skill. Every test you write here should satisfy each letter.
+This reference follows the **FIRST-U** principles (Fast, Isolated, Repeatable, Self-validating, Timely, Understandable) defined in §4 of the main skill. Every test here should satisfy each letter.
 
 ---
 

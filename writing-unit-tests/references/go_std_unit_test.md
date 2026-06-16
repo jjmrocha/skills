@@ -1,10 +1,10 @@
 # Go Unit Test Reference — stdlib only
 
-Conventions for writing Go unit tests with **only** the `testing` package. No testify, no gomock, no go-cmp. An agent following this should produce tests indistinguishable from existing ones in the project.
+Conventions for writing Go unit tests with **only** the `testing` package. No testify, no gomock, no go-cmp. Following it produces tests indistinguishable from existing ones in the project.
 
 > **Always check the project's existing tests first.** If the project uses testify or a different framework, follow `go_testify_unit_test.md` or the in-project style instead.
 
-This reference follows the **FIRST-U** principles (Fast, Isolated, Repeatable, Self-validating, Timely, Understandable) defined in §4 of the main skill. Every test you write here should satisfy each letter.
+This reference follows the **FIRST-U** principles (Fast, Isolated, Repeatable, Self-validating, Timely, Understandable) defined in §4 of the main skill. Every test here should satisfy each letter.
 
 ---
 

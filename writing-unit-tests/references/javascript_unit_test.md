@@ -6,7 +6,7 @@ Prescriptive guide for writing JavaScript/TypeScript unit tests with **Jest**. T
 
 > **Always check the project's existing tests first.** If the project uses Mocha + Chai, Jasmine, or AVA, follow that style. If it uses Vitest, use `vi` instead of `jest`. The reference is the default for greenfield code.
 
-This reference follows the **FIRST-U** principles (Fast, Isolated, Repeatable, Self-validating, Timely, Understandable) defined in §4 of the main skill. Every test you write here should satisfy each letter.
+This reference follows the **FIRST-U** principles (Fast, Isolated, Repeatable, Self-validating, Timely, Understandable) defined in §4 of the main skill. Every test here should satisfy each letter.
 
 ---
 

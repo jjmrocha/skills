@@ -7,7 +7,7 @@ description: Use when writing or modifying code, especially in agentic flows —
 
 **If you can name the failure mode you're about to commit, you usually won't commit it.**
 
-Six failure modes most commonly observed when LLMs write code, with the counter for each.
+Six failure modes most common in LLM-written code, with the counter for each.
 
 ## The Six Failure Modes
 

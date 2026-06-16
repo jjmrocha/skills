@@ -1,12 +1,12 @@
 # Python Unit Test Reference — pytest
 
-Prescriptive guide for writing Python unit tests with **pytest**. An agent following this should produce tests that read consistently and follow the universal principles in `SKILL.md`.
+Prescriptive guide for writing Python unit tests with **pytest**. Following it produces tests that read consistently and follow the universal principles in `SKILL.md`.
 
 **Stack**: pytest • `pytest.mark.parametrize` • `monkeypatch` / `unittest.mock` • plain `assert` statements.
 
 > **Always check the project's existing tests first.** If the project uses `unittest.TestCase` classes, follow that style instead of pytest's functional style. If it uses `pytest-mock`, prefer `mocker` over `unittest.mock.patch`. The reference is the default for greenfield code.
 
-This reference follows the **FIRST-U** principles (Fast, Isolated, Repeatable, Self-validating, Timely, Understandable) defined in §4 of the main skill. Every test you write here should satisfy each letter.
+This reference follows the **FIRST-U** principles (Fast, Isolated, Repeatable, Self-validating, Timely, Understandable) defined in §4 of the main skill. Every test here should satisfy each letter.
 
 ---
 

@@ -5,7 +5,7 @@ description: Use when auditing existing code — "review my changes", "check thi
 
 # Analyze Code
 
-Multi-lens audit of existing code. Applies five specialist perspectives and produces a prioritized findings report — a deep review, not a gate decision.
+Multi-lens audit of existing code: five specialist perspectives produce a prioritized findings report — a deep review, not a gate decision.
 
 **If the conversation was compacted, re-invoke this skill before continuing.**
 
@@ -24,7 +24,7 @@ Multi-lens audit of existing code. Applies five specialist perspectives and prod
 | **Security** | Input trust, auth, supply-chain (lockfiles, pinned base images, vuln scanners), secrets (env hygiene, KMS/Vault refs, log/layer leakage), license/SBOM | `security-engineer` specialist |
 | **Style** | Language style guide and formatting | `style-checker` skill |
 
-Apply **all five** — single-lens audits miss cross-cutting issues. Each lens loads its specialist from `using-software-specialists`; the lens questions are a starting point, not a substitute. The Style lens is the exception — it's performed by the `style-checker` skill.
+Apply **all five** — single-lens audits miss cross-cutting issues. Each lens loads its specialist from `using-software-specialists`; the lens questions are a starting point, not a substitute. Exception: the Style lens runs via the `style-checker` skill.
 
 ## Severity Scale
 
@@ -44,7 +44,7 @@ Don't inflate severity. Low stays Low. Reserve Critical for real blast radius.
    - **Skip rules:** auto-generated, vendored, build-output, minified — see [references.md](references.md). File presence is still a signal.
    - **If `kb_path` configured:** load `knowledge-base` first. Wiki↔code disagreements are findings per `knowledge-base` Integration rules.
 
-2. **Intent conformance** (skip if no spec and no plan) — gather intent from two sources: a spec/ticket the user provided in the request, and the implementation plan in the KB plans dir (if `kb_path` is configured and one exists). For each stated requirement or acceptance criterion, locate where the code satisfies it; for each plan step, confirm it was implemented.
+2. **Intent conformance** (skip if no spec and no plan) — gather intent from two sources: a spec/ticket the user provided, and the implementation plan in the KB plans dir (if `kb_path` is configured and one exists). For each stated requirement or acceptance criterion, locate where the code satisfies it; for each plan step, confirm it was implemented.
    - **Unmet requirement** (asked/planned but not delivered) = **High**; **Critical** if it's a correctness/security guarantee.
    - **Undocumented deviation** (built differently from the plan, no ADR/note explaining why) = **Medium**.
    - **Scope creep** (delivered but never asked for) = **Low**, unless it adds blast radius (new endpoint, new dependency), then **Medium**.
