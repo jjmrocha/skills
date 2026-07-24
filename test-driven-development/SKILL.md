@@ -33,11 +33,20 @@ See `coding-discipline` — the scope creep and speculative complexity failure m
 
 ### REFACTOR — Clean up without adding behavior
 
-Remove duplication, sharpen names, extract helpers. Change *how*, not *what*.
+Change *how*, not *what*.
+
+Walk each item and report one line for it — what you changed, or "already clean":
+
+- **Duplication** — the same knowledge expressed in two places
+- **Naming** — does each name say what it is, not how it works?
+- **Cognitive complexity** — nesting depth, branch count, boolean operators per condition. Extract until the function reads top-to-bottom in one screen.
+- **Single responsibility** — does this function do one thing?
+- **No side effects** — mutation of arguments, globals, or receiver state that the name doesn't advertise
+- **Dead code and speculative generality** — delete it
 
 For significant structural changes, load the `refactoring-expert` specialist from `using-software-specialists`.
 
-**Gate:** Suite stays green. Then write the next failing test.
+**Gate:** the six lines above, then the suite green. Then write the next failing test.
 
 ## Adapting to Existing Code
 
