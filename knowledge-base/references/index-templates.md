@@ -1,8 +1,8 @@
 # Index Templates
 
-Templates for the three special files that aren't content pages: `wiki/index.md`, each repo's `wiki/<repo>/index.md`, and `plans/index.md`. Use [page-template.md](page-template.md) for everything else.
+Templates for the four special files that aren't content pages: `wiki/index.md`, each repo's `wiki/<repo>/index.md`, `plans/index.md`, and `manuals/index.md`. Use [page-template.md](page-template.md) for everything else.
 
-There is no KB-root `index.md` — `wiki/index.md` and `plans/index.md` are parallel entry points.
+There is no KB-root `index.md` — `wiki/index.md`, `plans/index.md`, and `manuals/index.md` are parallel entry points.
 
 ---
 
@@ -89,3 +89,23 @@ Status table for every plan, regardless of repo. Sort by status (Active first), 
 ```
 
 **Status values:** `Draft` | `Active` | `Done` | `Abandoned`.
+
+---
+
+## `manuals/index.md`
+
+Every manual, sorted by kind then title. Updated whenever a manual is created, renamed, or removed — a manual missing from this table is reported by lint check 3 as an orphan.
+
+```markdown
+# Manuals
+
+Operator-facing documentation in plain language. Derived from the code and the wiki; the code remains canonical.
+
+| Manual | Kind | Repos | Last updated |
+|---|---|---|---|
+| [[manuals/running-a-valuation]] | how-to | mocho | 2026-08-07 |
+| [[manuals/how-valuation-works]] | explainer | mocho | 2026-08-07 |
+| [[manuals/reading-the-daily-report]] | explainer | *(whole system)* | 2026-08-07 |
+```
+
+**Kind values:** `how-to` | `explainer`. Leave `Repos` as `*(whole system)*` when the manual's frontmatter omits `repos:`.

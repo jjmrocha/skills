@@ -11,7 +11,8 @@ decide whether a page is safe to auto-delete.
 
 Run from inside a repo's working tree. The script walks up from the page to
 find the KB root (a directory containing both `wiki/` and `plans/`), then
-resolves the page's repo from its position in the wiki/ tree.
+resolves the page's repo from its position in the wiki/ tree. Pages under
+`plans/` and `manuals/` are protected — they never return `safe-to-delete`.
 
 Run:
     uv run scripts/check-sources.py <page-path>
@@ -36,6 +37,9 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+
+
+PROTECTED_BUCKETS = {"plans": "plan", "manuals": "manual"}
 
 
 def parse_frontmatter(text: str) -> tuple[dict, str]:
@@ -89,13 +93,19 @@ def get_page_repo(kb_root: Path, page_path: Path) -> str | None:
     """Return the repo name from a page's KB-relative path.
 
     Pages under wiki/<repo>/... → repo is <repo>.
-    Pages under plans/... or wiki/index.md → None.
+    Pages under plans/..., manuals/..., or wiki/index.md → None.
     """
     rel = page_path.resolve().relative_to(kb_root).as_posix()
     parts = rel.split("/")
     if len(parts) >= 3 and parts[0] == "wiki":
         return parts[1]
     return None
+
+
+def protected_bucket(kb_root: Path, page_path: Path) -> str | None:
+    """Return 'plan' or 'manual' for pages that are never auto-deleted."""
+    rel = page_path.resolve().relative_to(kb_root).as_posix()
+    return PROTECTED_BUCKETS.get(rel.split("/")[0])
 
 
 def get_current_repo_root() -> Path | None:
@@ -190,10 +200,14 @@ def check_path_alive(
 def determine_verdict(
     page_repo: str | None,
     current_repo: str | None,
-    is_plan: bool,
+    protected: str | None,
     sources: list[dict],
 ) -> tuple[str, str | None]:
-    """Apply the Delete protocol's decision tree to classified sources."""
+    """Apply the Delete protocol's decision tree to classified sources.
+
+    `protected` is 'plan', 'manual', or None — plans and manuals are never
+    auto-deleted, however dead their sources are.
+    """
     if not sources:
         return ("no-sources", "page has no sources field")
 
@@ -245,13 +259,13 @@ def determine_verdict(
         return ("flag",
                 "all in-tree paths dead but external (URL/wiki) sources "
                 "present — can't fully verify")
-    if is_plan:
+    if protected:
         return ("flag",
-                "all in-tree paths dead but page is a plan "
-                "(plans are never auto-deleted)")
+                f"all in-tree paths dead but page is a {protected} "
+                f"({protected}s are never auto-deleted)")
     return ("safe-to-delete",
             "all in-tree sources dead (no renames detected), "
-            "no externals, not a plan")
+            "no externals, not a plan or manual")
 
 
 def assess(page_path: Path) -> dict:
@@ -264,8 +278,7 @@ def assess(page_path: Path) -> dict:
 
     kb_root = find_kb_root(page_path)
     page_repo = get_page_repo(kb_root, page_path) if kb_root else None
-    is_plan = (kb_root is not None
-               and page_path.resolve().is_relative_to(kb_root / "plans"))
+    protected = protected_bucket(kb_root, page_path) if kb_root else None
 
     repo_root = get_current_repo_root()
     current_repo = get_current_repo_name(repo_root)
@@ -295,14 +308,15 @@ def assess(page_path: Path) -> dict:
                 sources.append(entry)
 
     verdict, reason = determine_verdict(
-        page_repo, current_repo, is_plan, sources)
+        page_repo, current_repo, protected, sources)
 
     return {
         "page": str(page_path),
         "kb_root": str(kb_root) if kb_root else None,
         "page_repo": page_repo,
         "current_repo": current_repo,
-        "is_plan": is_plan,
+        "is_plan": protected == "plan",
+        "is_manual": protected == "manual",
         "verdict": verdict,
         "reason": reason,
         "sources": sources,
@@ -317,7 +331,12 @@ def format_human(result: dict) -> str:
         lines.append(f"Page repo: {result['page_repo']}")
     if result["current_repo"]:
         lines.append(f"Current repo: {result['current_repo']}")
-    lines.append(f"Plan page: {'yes' if result['is_plan'] else 'no'}")
+    if result["is_plan"]:
+        lines.append("Protected: plan (never auto-deleted)")
+    elif result["is_manual"]:
+        lines.append("Protected: manual (never auto-deleted)")
+    else:
+        lines.append("Protected: no")
     lines.append(f"Verdict: {result['verdict']}")
     if result["reason"]:
         lines.append(f"Reason: {result['reason']}")

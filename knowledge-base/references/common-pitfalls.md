@@ -50,6 +50,18 @@ Delete only when **all** in-tree sources are dead. If even one source is alive, 
 
 Plans are never auto-deleted, even when their sources are dead. A plan describes intent; intent can outlive the code that originally implemented it (e.g., the implementation was rolled back; the plan still records what was tried and why). Flag only; the user decides.
 
+## Answering from a manual
+
+A manual is written for a human operator, in deliberately imprecise language, and it is downstream of the code. Reaching for one because it phrases something conveniently is the "quick lookup" temptation wearing a different hat — the manual's simplification is exactly what makes it wrong as a technical answer. Read the code. Manuals are read only when the user is asking about the manual itself.
+
+## Manual page deletion
+
+Manuals are never auto-deleted, even when every source is dead. The user commissioned the document; dead sources mean the manual needs rewriting against the current code, or that the user should decide it's obsolete. Flag only.
+
+## Writing a manual nobody asked for
+
+Manual creation is explicit. An Ingest source that reads like operator documentation, or a subject that looks under-served, is not authorization — write it to `wiki/` and mention that a manual could be worth having. Deciding what deserves an operator-facing document is the user's call, not a gap you fill.
+
 ## Cross-repo source verification
 
 If a page's `sources:` reference a repo other than the one the agent is currently in, the agent can't verify code in repos it isn't in. Flag, never auto-delete.
@@ -66,6 +78,6 @@ The helpers/ bar is *reusable across the repo, non-private*. Feature-internal he
 
 Pattern *pages* are Ingest-only. The user decides what's canonical. Updating an existing pattern page when its exemplar drifts is fine — that's a normal Update.
 
-## Pattern `kind:` requirement
+## `kind:` requirement
 
-`kind:` is required on every page under `patterns/` (lint check 7). Choose `convention | recipe | template`, or don't write the page.
+`kind:` is required on every page under `patterns/` and every page under `manuals/` (lint check 7). Patterns: `convention | recipe | template`. Manuals: `how-to | explainer`. Choose one, or don't write the page.

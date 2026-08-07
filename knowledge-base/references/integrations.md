@@ -10,6 +10,8 @@ All integrations are **gated on `kb_path` being configured** — when no KB exis
 | `using-software-specialists` | Phase A (consult, mandatory before producing code) | Specialist reads `wiki/<repo>/index.md` including the `Helpers` and `Patterns` sections, then drills into relevant pages. Uses existing helpers and follows canonical patterns instead of inventing divergent shapes. |
 | `using-software-specialists` | Phase B (post-write, before declaring completion) | If any new function meets the helpers inclusion bar (reusable, non-private), the specialist updates `helpers/<category>.md` autonomously via the Update workflow. Pattern *creation* is **not** in scope for the specialist — patterns are added only via Ingest. |
 
+**Manuals are not part of any integration.** No consumer skill reads `manuals/` — they read code and `wiki/`. A manual is derived output written for a human operator; treating it as design input would let plain-language paraphrase feed back into code decisions.
+
 ## Cross-references between pages (load-bearing for the integrations)
 
 Four link types the skill maintains:

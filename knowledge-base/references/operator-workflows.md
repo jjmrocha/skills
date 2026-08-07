@@ -19,7 +19,7 @@ If `acquire` exits non-zero, **stop**, surface the holder's PID and acquired-at 
 Acquire the write lock; release on summary success.
 
 1. **Enumerate the full source set, then read every file.** If the source resolves to more than one file, list every file first (`git ls-files`, `find <dir> -type f`, archive listing). Then read each. **No sampling.** The only allowed exclusions are files the user explicitly named out-of-scope, or boilerplate with no system surface (lockfiles, generated code, vendored deps, binary assets) — announce any exclusion in the summary.
-2. Identify the destination: which repo, which subfolder under `wiki/<repo>/`, or `plans/`. Ask only when the source is genuinely ambiguous; for clean sources, pick the best fit and surface the choice in the summary.
+2. Identify the destination: which repo, which subfolder under `wiki/<repo>/`, or `plans/`. Ask only when the source is genuinely ambiguous; for clean sources, pick the best fit and surface the choice in the summary. **`manuals/` is never a default destination** — target it only when the user asked for a manual (see [Manuals](#manuals)).
 3. For each page: create or update; add `[[wiki-links]]`; set `sources:` (listing **every** contributing file) and `last_updated:`.
 4. **Cross-repo linking.** Forward-link the consumer pages you wrote, and backfill other repos' consumer pages that the surfaces you just documented now satisfy — see [Cross-repo linking](#cross-repo-linking).
 5. Update the affected `wiki/<repo>/index.md` and the top-level `wiki/index.md` if a new repo or top-level page was added.
@@ -37,12 +37,26 @@ Acquire the write lock; release on summary success.
 
 Acquire the write lock; release on summary success.
 
-1. Identify pages affected by the change.
+1. Identify pages affected by the change. **Include manuals:** any manual whose `sources:` lists a file you changed is affected and gets refreshed in this same pass.
 2. Write directly. Add `[[wiki-links]]`; set `last_updated:`.
 3. **Cross-repo linking** per [Cross-repo linking](#cross-repo-linking).
-4. Update the repo's `wiki/<repo>/index.md` and `wiki/index.md` as needed.
+4. Update the repo's `wiki/<repo>/index.md` and `wiki/index.md` as needed; update `manuals/index.md` if a manual's `last_updated` changed.
 5. Summarize: one line per page, scannable (`+ new`, `~ updated`).
 6. Deletes → [Delete protocol](#delete-protocol).
+
+## Manuals
+
+Manuals are operator-facing pages under `manuals/`. They ride the Ingest and Update workflows above, with three gates:
+
+| Operation | Gate |
+|---|---|
+| **Create** | Only when the user asks for a manual. Never as a side effect of another write — not on Ingest of a doc that "reads like a manual", not on Update when a subject looks under-documented. |
+| **Refresh** | Automatic. A changed file in a manual's `sources:` makes that manual an affected page in the Update workflow, refreshed in the same pass. |
+| **Delete** | Always requires approval. Manuals are never auto-delete candidates — see [Delete protocol](#delete-protocol). |
+
+If asked for a manual on a subject with no wiki or code coverage, say so and offer to ingest the subject first. Don't write an unsourced manual.
+
+Register and body shape are in [page-template.md](page-template.md). Lint does not check readability — that's yours at write time.
 
 ## Cross-repo linking
 
@@ -94,8 +108,8 @@ uv run scripts/lint.py <kb_path> --json
 3. **Orphan pages** — no inbound `[[wiki-link]]`.
 4. **Concept-gap candidates** — regex heuristic; triage by reading.
 5. **`[needs source]` markers** — unsourced claims.
-6. **All-dead in-tree sources** — non-plan pages with every `sources:` path truly dead (no rename) are **auto-delete candidates** per the [Delete protocol](#delete-protocol). Plans are flagged, never deleted. Renamed → not eligible (update path instead).
-7. **Pattern `kind:` validity** — pages under `patterns/` must declare `kind:` set to `convention | recipe | template`.
+6. **All-dead in-tree sources** — pages with every `sources:` path truly dead (no rename) are **auto-delete candidates** per the [Delete protocol](#delete-protocol). Plans and manuals are flagged as `protected_dead`, never deleted. Renamed → not eligible (update path instead).
+7. **`kind:` validity** — pages under `patterns/` must declare `kind:` set to `convention | recipe | template`; pages under `manuals/` must declare `how-to | explainer`.
 
 Surface 1, 2, 3, 5, 7 to the user; triage 4 by reading; for 6 candidates, verify each with `check-sources.py` before deleting.
 
@@ -107,14 +121,14 @@ uv run scripts/check-sources.py <page-path>
 
 | Verdict | Action |
 |---|---|
-| `safe-to-delete` | All in-tree sources dead, no externals, not a plan, current repo matches page repo. **Delete autonomously.** |
+| `safe-to-delete` | All in-tree sources dead, no externals, not a plan or manual, current repo matches page repo. **Delete autonomously.** |
 | `partial` | Drop dead/renamed entries from `sources:`; flag for review. Don't delete. |
 | `flag (renames)` | Update source paths. Don't delete. |
-| `flag (external / cross-repo / plan / no-sources)` | Surface to user. Don't delete. |
+| `flag (external / cross-repo / plan / manual / no-sources)` | Surface to user. Don't delete. |
 | `all-alive` | Nothing to do. |
 
 **Autonomous delete = only `safe-to-delete`. Every other delete reason (page obsolete for non-source reasons, merging, restructuring, "user said delete") requires explicit approval.** Before approved deletes, show what's about to be deleted and which inbound `[[wiki-links]]` will break.
 
 Autonomous deletes still take the [write lock](#write-lock-ingest-update-autonomous-delete) around the delete + index updates.
 
-After any delete: remove the entry from the repo's `index.md` and `wiki/index.md`. Include the delete in the post-action summary.
+After any delete: remove the entry from the page's index — the repo's `index.md` and `wiki/index.md`, or `plans/index.md`, or `manuals/index.md`. Include the delete in the post-action summary.

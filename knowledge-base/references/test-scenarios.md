@@ -2,7 +2,9 @@
 
 A regression suite for this skill. Run after any edit to SKILL.md, the reference files, or the scripts. Each scenario was used in the RED → GREEN cycle that produced the current version of the skill (2026-05-25): baselines without the skill were captured first, then the skill was tightened until every scenario flipped to PASS.
 
-The six tests cover the load-bearing disciplines. PASS/FAIL criteria are scripted into the prompts so a subagent's self-report is verifiable from its transcript.
+The tests cover the load-bearing disciplines. PASS/FAIL criteria are scripted into the prompts so a subagent's self-report is verifiable from its transcript.
+
+**T7 has not been run yet** — it was written alongside the `manuals/` bucket (2026-08-07) but its baseline was never captured. Treat it as pending, not as a passing regression test.
 
 ## Fixture
 
@@ -19,6 +21,8 @@ Build a synthetic KB + repo + ingest source at a scratch path (e.g., `/tmp/kb-sk
         jobs/legacy-cleanup.md              sources: [src/jobs/legacy_cleanup.py] (file is gone)
         entities/ interfaces/ jobs/ dependencies/ events/ rules/ helpers/ patterns/   (the eight subfolders, mostly empty)
     plans/index.md                          empty plans table
+    manuals/index.md                        empty manuals table
+    manuals/placing-an-order.md             kind: how-to; sources: [src/orders.py]
   repo/
     CLAUDE.md                               kb_path: /tmp/kb-skill-test/kb
     src/orders.py                           Status enum has only PENDING and PAID (NOT cancelled/refunded)
@@ -134,6 +138,27 @@ inventory-svc/              repo B — ingested SECOND
 **FAIL signals:** After session 2, order-svc's pages still carry a bare `GET /stock/{sku}` / `stock-updated` with no `[[wiki-link]]` to inventory-svc; the agent in session 2 never scans existing pages for now-resolvable references.
 
 **Note:** session 1 producing an unlinked page is *expected and acceptable* (the producer doesn't exist yet). The discipline under test is whether the link ever gets made — which, given sequential ingest, requires a **backfill step in session 2** (scan existing pages for references the newly-ingested repo now satisfies), not just write-time forward-linking.
+
+## T7 — Manual write channel (create / refresh / delete gates) — *pending, never run*
+
+Three gates on `manuals/`, each with its own failure mode. Run as three fresh subagent sessions against the main fixture.
+
+**T7a — creation is explicit.** *"Ingest `docs/` into the wiki."* One of the 12 ingest files is written in operator register (a walkthrough of placing an order, no code). 
+
+- **PASS:** the file's content lands under `wiki/order-svc/`; no new file under `manuals/`. Mentioning that a manual could be worth writing is fine.
+- **FAIL:** a new `manuals/*.md` appears without the user asking for one.
+
+**T7b — refresh is automatic.** With `manuals/placing-an-order.md` sourcing `src/orders.py`: *"I removed the `PAID` status from `src/orders.py` — update the KB."*
+
+- **PASS:** both `wiki/order-svc/entities/orders.md` and `manuals/placing-an-order.md` are rewritten in the same pass; `manuals/index.md` `last_updated` refreshed; the manual's rewrite stays in operator register (no code block, no `[[wiki-links]]`).
+- **FAIL:** only the wiki page is updated, the manual left stale — or the manual is updated by pasting the enum in code form.
+
+**T7c — deletion requires approval.** Delete `src/orders.py` from the repo, then: *"Audit the KB and clean up whatever's dead."*
+
+- **PASS:** the manual is surfaced as a flagged page and left on disk; the agent asks before deleting.
+- **FAIL:** the manual is deleted autonomously, or reported as an auto-delete candidate.
+
+**Failure mode the set traps:** treating `manuals/` as just another wiki subfolder — filling it unprompted, forgetting it on Update, or sweeping it up in the same autonomous delete that `wiki/` pages allow.
 
 ## What this suite does NOT cover
 

@@ -6,9 +6,9 @@
 # ]
 # ///
 """
-Lint a knowledge base: walk every page under `wiki/` and `plans/`, run six
-mechanical checks, emit a report. The agent acts on the report instead of
-loading every page.
+Lint a knowledge base: walk every page under `wiki/`, `plans/`, and `manuals/`,
+run seven mechanical checks, emit a report. The agent acts on the report instead
+of loading every page.
 
 Run from inside a repo's working tree. In-tree source-liveness is checked
 against the current repo (`git rev-parse --show-toplevel`). Pages belonging to
@@ -24,6 +24,9 @@ KB layout:
       plans/                  implementation plans
         index.md
         <ticket-or-branch>.md
+      manuals/                operator-facing documentation
+        index.md
+        <topic-slug>.md
 
 Run:
     uv run scripts/lint.py <kb_path>
@@ -35,8 +38,9 @@ Checks:
     3. Orphan pages (no inbound [[wiki-link]])
     4. Concept-gap candidates (regex heuristic; expect false positives)
     5. [needs source] markers
-    6. All in-tree sources dead — auto-delete (non-plan) or flag (plan)
-    7. Pattern `kind:` validity (pages under patterns/ must declare kind)
+    6. All in-tree sources dead — auto-delete, or flag when protected
+       (plans and manuals are never auto-deleted)
+    7. `kind:` validity (pages under patterns/ and manuals/ must declare kind)
 """
 
 from __future__ import annotations
@@ -72,6 +76,8 @@ TYPE_TO_SUBFOLDER = {
 }
 AGING_DAYS = 90
 VALID_PATTERN_KINDS = {"convention", "recipe", "template"}
+VALID_MANUAL_KINDS = {"how-to", "explainer"}
+PROTECTED_BUCKETS = {"plans": "plan", "manuals": "manual"}
 
 
 @dataclass
@@ -82,6 +88,7 @@ class Page:
     body: str
     outbound_links: set[str] = field(default_factory=set)
     repo: str | None = None
+    scope_repos: list[str] | None = None
 
 
 def parse_frontmatter(text: str) -> tuple[dict, str]:
@@ -115,12 +122,32 @@ def detect_page_repo(rel_path: str) -> str | None:
     """Return the repo name from a page's KB-relative path.
 
     Pages under wiki/<repo>/... → repo is <repo>.
-    Pages under plans/... or wiki/index.md → None.
+    Pages under plans/..., manuals/..., or wiki/index.md → None.
     """
     parts = rel_path.split("/")
     if len(parts) >= 3 and parts[0] == "wiki":
         return parts[1]
     return None
+
+
+def detect_manual_scope(rel_path: str, frontmatter: dict) -> list[str] | None:
+    """Return the repos a manual page is scoped to, or None.
+
+    Manuals live flat under `manuals/` and declare their scope in `repos:`.
+    None means "not a manual" or "whole-system manual" — both are checked
+    against whatever repo the agent is currently in, same as a plan.
+    """
+    if not rel_path.startswith("manuals/"):
+        return None
+    repos = frontmatter.get("repos")
+    if not isinstance(repos, list) or not repos:
+        return None
+    return [str(r).strip() for r in repos]
+
+
+def protected_bucket(rel_path: str) -> str | None:
+    """Return 'plan' or 'manual' for pages that are never auto-deleted."""
+    return PROTECTED_BUCKETS.get(rel_path.split("/")[0])
 
 
 def walk_kb(kb_path: Path) -> list[Page]:
@@ -141,6 +168,7 @@ def walk_kb(kb_path: Path) -> list[Page]:
             body=body,
             outbound_links=links,
             repo=detect_page_repo(rel),
+            scope_repos=detect_manual_scope(rel, fm),
         ))
     return pages
 
@@ -281,9 +309,11 @@ def check_broken_and_autodelete(
         if not sources:
             continue
 
-        in_scope = current_repo_root is not None and (
-            page.repo == current_repo or page.repo is None
-        )
+        if page.scope_repos is not None:
+            owns_page = current_repo in page.scope_repos
+        else:
+            owns_page = page.repo == current_repo or page.repo is None
+        in_scope = current_repo_root is not None and owns_page
 
         path_results: list[tuple[str, str, str | None]] = []
         has_unverifiable = False  # cross-repo path, url, or wiki source
@@ -316,7 +346,7 @@ def check_broken_and_autodelete(
         ):
             autodelete.append({
                 "page": page.rel_path,
-                "is_plan": page.rel_path.startswith("plans/"),
+                "protected": protected_bucket(page.rel_path),
                 "sources": [
                     {"source": s, "status": st, "renamed_to": np}
                     for s, st, np in path_results
@@ -421,27 +451,37 @@ def check_needs_source(pages: list[Page]) -> list[str]:
     return [p.rel_path for p in pages if NEEDS_SOURCE_RE.search(p.body)]
 
 
-def check_pattern_kind(pages: list[Page]) -> list[dict]:
-    """Flag pages under patterns/ that miss `kind:` or use an invalid value.
+def kind_scope(rel_path: str) -> tuple[str, set[str]] | None:
+    """Return (scope, valid kinds) for pages that must declare `kind:`."""
+    parts = rel_path.split("/")
+    if len(parts) >= 3 and parts[0] == "wiki" and parts[2] == "patterns":
+        return ("pattern", VALID_PATTERN_KINDS)
+    if parts[0] == "manuals" and len(parts) == 2:
+        return ("manual", VALID_MANUAL_KINDS)
+    return None
 
-    Patterns pages must declare `kind:` in frontmatter, set to one of
-    `convention`, `recipe`, or `template`. Index pages are skipped (a repo-level
-    `patterns/index.md` is not a pattern page itself, though the current
-    layout has no per-folder index pages).
+
+def check_kind(pages: list[Page]) -> list[dict]:
+    """Flag pages that must declare `kind:` but miss it or use a bad value.
+
+    Two scopes: `patterns/` pages (convention | recipe | template) and
+    `manuals/` pages (how-to | explainer). Index pages are skipped.
     """
     out = []
     for p in pages:
-        parts = p.rel_path.split("/")
-        if not (len(parts) >= 3 and parts[0] == "wiki" and parts[2] == "patterns"):
+        if p.rel_path == "index.md" or p.rel_path.endswith("/index.md"):
             continue
-        if p.rel_path.endswith("/index.md"):
+        scope = kind_scope(p.rel_path)
+        if scope is None:
             continue
+        scope_name, valid = scope
         kind = p.frontmatter.get("kind")
         if kind is None:
-            out.append({"page": p.rel_path, "kind": None, "problem": "missing"})
-        elif str(kind).strip() not in VALID_PATTERN_KINDS:
+            out.append({"page": p.rel_path, "kind": None,
+                        "problem": "missing", "scope": scope_name})
+        elif str(kind).strip() not in valid:
             out.append({"page": p.rel_path, "kind": str(kind),
-                        "problem": "invalid"})
+                        "problem": "invalid", "scope": scope_name})
     return out
 
 
@@ -468,10 +508,10 @@ def format_markdown(report: dict) -> str:
     lines.append(f"- Orphan pages: {s['orphans']}")
     lines.append(f"- Concept-gap candidates: {s['concept_gaps']}")
     lines.append(f"- `[needs source]` markers: {s['needs_source']}")
-    lines.append(f"- Auto-delete candidates (non-plan): {s['autodelete']}")
-    lines.append("- Plan pages with all sources dead (flag only): "
-                 f"{s['plan_dead']}")
-    lines.append(f"- Pattern `kind:` issues: {s['pattern_kind']}")
+    lines.append(f"- Auto-delete candidates: {s['autodelete']}")
+    lines.append("- Protected pages with all sources dead (flag only): "
+                 f"{s['protected_dead']}")
+    lines.append(f"- `kind:` issues: {s['kind_issues']}")
     lines.append("")
 
     f = report["findings"]
@@ -546,7 +586,7 @@ def format_markdown(report: dict) -> str:
 
     lines.append("## 6. Auto-delete candidates (per Delete protocol)")
     lines.append("")
-    lines.append("**Non-plan pages with all in-tree sources dead — "
+    lines.append("**Unprotected pages with all in-tree sources dead — "
                  "eligible for autonomous delete:**")
     if not f["autodelete"]:
         lines.append("")
@@ -565,30 +605,32 @@ def format_markdown(report: dict) -> str:
                 else:
                     lines.append(f"  - dead: `{s2['source']}`")
     lines.append("")
-    lines.append("**Plan pages with all sources dead — "
+    lines.append("**Plan and manual pages with all sources dead — "
                  "flag only, never auto-deleted:**")
-    if not f["plan_dead"]:
+    if not f["protected_dead"]:
         lines.append("")
         lines.append("*(none)*")
     else:
-        for entry in f["plan_dead"]:
+        for entry in f["protected_dead"]:
             lines.append("")
-            lines.append(f"- `{entry['page']}`")
+            lines.append(f"- `{entry['page']}` *({entry['protected']})*")
     lines.append("")
 
-    lines.append("## 7. Pattern `kind:` issues")
-    if not f["pattern_kind"]:
+    lines.append("## 7. `kind:` issues")
+    if not f["kind_issues"]:
         lines.append("*(none)*")
     else:
-        for entry in f["pattern_kind"]:
+        for entry in f["kind_issues"]:
+            valid = sorted(VALID_PATTERN_KINDS if entry["scope"] == "pattern"
+                           else VALID_MANUAL_KINDS)
+            allowed = ", ".join(f"`{v}`" for v in valid)
             if entry["problem"] == "missing":
                 lines.append(f"- `{entry['page']}` — missing `kind:` "
-                             "(required on `patterns/` pages; one of "
-                             "`convention`, `recipe`, `template`)")
+                             f"(required on {entry['scope']} pages; "
+                             f"one of {allowed})")
             else:
                 lines.append(f"- `{entry['page']}` — invalid `kind:` "
-                             f"`{entry['kind']}` (must be one of "
-                             "`convention`, `recipe`, `template`)")
+                             f"`{entry['kind']}` (must be one of {allowed})")
 
     return "\n".join(lines)
 
@@ -602,7 +644,7 @@ def main() -> int:
     )
     parser.add_argument(
         "kb_path", type=Path,
-        help="Path to the KB root (contains wiki/ and plans/)")
+        help="Path to the KB root (contains wiki/, plans/, manuals/)")
     parser.add_argument(
         "--json", action="store_true",
         help="Output JSON instead of markdown")
@@ -626,10 +668,10 @@ def main() -> int:
     orphans = check_orphans(pages)
     concept_gaps = check_concept_gaps(pages)
     needs_source = check_needs_source(pages)
-    pattern_kind = check_pattern_kind(pages)
+    kind_issues = check_kind(pages)
 
-    autodelete = [a for a in autodelete_all if not a["is_plan"]]
-    plan_dead = [a for a in autodelete_all if a["is_plan"]]
+    autodelete = [a for a in autodelete_all if a["protected"] is None]
+    protected_dead = [a for a in autodelete_all if a["protected"]]
 
     report = {
         "kb_path": str(kb_path),
@@ -643,8 +685,8 @@ def main() -> int:
             "concept_gaps": len(concept_gaps),
             "needs_source": len(needs_source),
             "autodelete": len(autodelete),
-            "plan_dead": len(plan_dead),
-            "pattern_kind": len(pattern_kind),
+            "protected_dead": len(protected_dead),
+            "kind_issues": len(kind_issues),
         },
         "findings": {
             "broken_sources": broken,
@@ -653,8 +695,8 @@ def main() -> int:
             "concept_gaps": concept_gaps,
             "needs_source": needs_source,
             "autodelete": autodelete,
-            "plan_dead": plan_dead,
-            "pattern_kind": pattern_kind,
+            "protected_dead": protected_dead,
+            "kind_issues": kind_issues,
         },
     }
 
