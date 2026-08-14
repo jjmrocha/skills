@@ -20,9 +20,11 @@ gate decision.
 
 ## How It Works
 
-The skill runs a scope-and-boundary frame, five lenses (Architecture, Quality, Performance, Security, Style) and the project's configured tooling, then synthesizes findings into a ranked report split into **System-level** and **Code-level** sections. See [SKILL.md](SKILL.md) for the full workflow and [references.md](references.md) for heavy reference (scanner-per-file-type matrix, tooling discovery paths, skip-path patterns, specialist routing).
+The skill runs a scope-and-boundary frame; checks intent conformance, breaking changes, and convention/duplication drift; applies five lenses (Architecture, Quality, Performance, Security, Style); runs the project's configured tooling; then adjudicates every candidate through an independent verify pass before synthesizing survivors into a ranked report split into **System-level** and **Code-level** sections. See [SKILL.md](SKILL.md) for the full workflow and [references.md](references.md) for heavy reference (scanner-per-file-type matrix, tooling discovery paths, skip-path patterns, security exclusions, specialist routing).
 
-Each finding carries severity, confidence, scope tag (system/code), file:line, evidence snippet, impact, action, and a routing specialist for the audit → fix loop.
+Each finding carries severity, a verifier verdict (Confirmed or Plausible), scope tag (system/code), file:line, evidence snippet, impact, action, and a routing specialist for the audit → fix loop.
+
+The skill is report-only — it never applies fixes.
 
 ## Usage
 

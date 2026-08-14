@@ -1,11 +1,13 @@
 ---
 name: analyze-code
-description: Use when auditing existing code — "review my changes", "check this PR", "look at the diff", legacy reviews, pre-PR self-review, module health checks, or tech-debt assessment before a large change.
+description: Use when auditing existing code — "review my changes", "check this PR", "look at the diff", code review, security review of a branch, cleanup or duplication pass, legacy reviews, pre-PR self-review, module health checks, or tech-debt assessment before a large change.
 ---
 
 # Analyze Code
 
-Multi-lens audit of existing code: five specialist perspectives produce a prioritized findings report — a deep review, not a gate decision.
+Multi-lens audit of existing code: five specialist perspectives produce candidate findings, an independent verify pass adjudicates them, and the survivors ship as a prioritized report — a deep review, not a gate decision.
+
+Report-only. This skill never applies fixes; it routes them.
 
 **If the conversation was compacted, re-invoke this skill before continuing.**
 
@@ -19,7 +21,7 @@ Multi-lens audit of existing code: five specialist perspectives produce a priori
 | Lens | What it covers | Reference |
 |------|----------------|-----------|
 | **Architecture** | Coupling, layering, public-API contracts, cohesion, deploy topology, runtime concerns (graceful shutdown, signals, healthchecks, retry/backoff) | `system-architect` specialist |
-| **Quality** | Complexity, duplication, test-coverage signal, CI/IaC config quality (Dockerfile, Makefile, GH Actions), 12-factor config | `refactoring-expert` specialist |
+| **Quality** | Three named angles — Simplification, Efficiency, Altitude (see Step 5) — plus test-coverage signal, CI/IaC config quality (Dockerfile, Makefile, GH Actions), 12-factor config | `refactoring-expert` specialist |
 | **Performance** | Hot paths, algorithmic complexity, N+1, unnecessary allocations | `performance-engineer` specialist |
 | **Security** | Input trust, auth, supply-chain (lockfiles, pinned base images, vuln scanners), secrets (env hygiene, KMS/Vault refs, log/layer leakage), license/SBOM | `security-engineer` specialist |
 | **Style** | Language style guide and formatting | `style-checker` skill |
@@ -52,12 +54,38 @@ Don't inflate severity. Low stays Low. Reserve Critical for real blast radius.
 
 3. **Breaking-change scan** (modified code only) — for each changed signature, return type, raised error, side effect, or invariant on an existing symbol, list every caller via `find_referencing_symbols` or `grep`, verify the new contract holds at each call site, and report any caller that breaks as a finding. Public-API breaks are Critical/High; a single internal caller is Medium. Skip on greenfield.
 
-4. **Convention & duplication scan** (new or modified code only) — apply `coding-discipline` Parallel-Solution test: for each new helper, type, or pattern, `find_symbol`/`grep` for an existing equivalent first. Parallel implementation = **High**; convention drift = **Medium**; minor inconsistency = **Low**. Skip on greenfield.
+4. **Convention & duplication scan** (new or modified code only) — skip on greenfield. This step is the `coding-discipline` Parallel-Solution test applied as an audit. Both halves run.
+
+   **4a. Establish the baseline.** Drift is measured against a source, not against taste. Before judging anything, collect what actually governs the changed code:
+   - Every governing `CLAUDE.md`: user-level `~/.claude/CLAUDE.md`, the repo root, and any `CLAUDE.md` / `CLAUDE.local.md` in a directory that is an ancestor of a changed file — a directory's file governs only files at or below it.
+   - If `kb_path` is configured: the `patterns/` pages covering the touched surface.
+   - The two or three nearest sibling files to each changed file — where nothing is written down, the local idiom *is* the standard.
+
+   Flag a convention violation only when you can **quote the rule and quote the line that breaks it**, naming the source. No "spirit of the doc" inferences, no personal preference. If nothing governs the changed code, say so and flag nothing here.
+
+   **4b. Duplication — make the claim checkable.** Two rules carry this half:
+
+   - **Name the incumbent.** Every duplication finding names the existing symbol, at `file:line`, that should be called instead. A finding that cannot name one is not a duplication finding — drop it, or downgrade it to convention drift.
+   - **State what you searched.** "No equivalent found" is credible only with the searches named — an unstated search is an unrun search. This applies hardest to the non-findings: say why the new helper you *didn't* flag has no incumbent.
+
+   Search by behavior, not by name. The question is *does this repo already solve this problem class?*, not *does this name already exist?*. Duplicate code rarely shares a name with what it duplicates — that is why it got written — so an empty name search is not evidence the duplicate is absent.
+
+   If the repo's shared and utility modules are small enough to read end to end, read them; that settles the question directly and no search strategy is needed. When they are not, run **at least two** of:
+   - **Signature shape** — `find_symbol` for functions taking the same parameter types and returning the same type, regardless of name.
+   - **Callee fingerprint** — grep the distinctive API, constant, regex, or library call it wraps. Two solutions to the same problem call the same underlying things.
+   - **Problem-class sweep** — for the known classes (pagination, validation, auth, retry/backoff, error mapping, config loading, logging, serialization, date/ID formatting), go straight to the module that owns the class.
+   - **Domain vocabulary** — grep the nouns of the new code's domain, not its function name.
+
+   Severity: parallel implementation of an existing solution = **High**; convention violation with a quoted rule = **Medium**; local idiom inconsistency = **Low**.
 
 5. **Apply the five lenses** — Architecture, Quality, Performance, Security, Style, each covering its row in the Five Lenses table above against the scoped code. Directives beyond the table:
    - **Architecture:** also check cross-service consistency where the changed code crosses service or package boundaries.
+   - **Quality:** run three named angles, each producing findings that name the concrete cost (what is duplicated, wasted, or made harder to maintain) rather than a vague smell. Reuse is not here — Step 4b owns it.
+     - **Simplification** — unnecessary complexity the change adds: redundant or derivable state, copy-paste with slight variation, deep nesting, dead code left behind. **Name the simpler form that does the same job.**
+     - **Efficiency** — wasted work the change introduces: redundant computation or repeated I/O, independent operations run sequentially, blocking work added to startup or a hot path. Also long-lived objects built from closures or captured environments — they hold the entire enclosing scope alive for the object's lifetime, which leaks when that scope holds large values; prefer a struct or class copying only the fields it needs. **Name the cheaper alternative.**
+     - **Altitude** — is each change made at the right depth, or is it a bandaid? Special cases layered onto shared infrastructure signal that the fix isn't deep enough; prefer generalizing the underlying mechanism. **Name the level the fix belongs at.**
    - **Performance:** report what the code reveals; don't flag missing profiling as a defect.
-   - **Security:** hardcoded secrets are Critical; a missing rotation/Vault reference where one is expected is High.
+   - **Security:** hardcoded secrets are Critical; a missing rotation/Vault reference where one is expected is High. **Apply the exclusions and precedents in [references.md](references.md) before emitting any security finding** — they suppress the known false-positive classes.
    - **Style:** load `style-checker` — it owns linter discovery, severity mapping, and conflict-resolution.
 
 6. **Run configured tooling** — for every linter, formatter, scanner, or test suite the project ships, **you must run it — "looked at the code" is not a substitute**.
@@ -66,7 +94,25 @@ Don't inflate severity. Low stays Low. Reserve Critical for real blast radius.
    - Fold tool failures into findings at their natural severity (failing security test → Critical; lint nit → Low). Tooling configured but currently red is itself a finding. **Tooling configured but not invoked by CI is a Medium "CI hygiene" finding.** No tooling configured at all where relevant files exist is the same severity.
    - **Test suite execution:** report pass/fail counts, skipped-test list, and **new failures vs. the base SHA**. Flakiness analysis and perf timing are out of scope (use the `verify` skill).
 
-7. **Synthesize & deliver** — group, dedupe, rank by severity. Tag each finding `scope: system` or `scope: code`. Output two severity-ordered lists: **System-level findings** then **Code-level findings**. Cap Low at 10 per lens and Medium at 15 per lens; if hit, emit a meta-finding noting the truncation. Critical/High are uncapped.
+7. **Verify** — everything Steps 2–5 produced is a *candidate*, not a finding.
+
+   Dedup candidates pointing at the same line and mechanism, keeping the one with the most concrete evidence. Then adjudicate each survivor with **one verifier subagent** that has not seen the finder's reasoning — independence is the whole mechanism; a self-check in the same context only re-confirms itself. Each verifier returns exactly one verdict:
+
+   - **Confirmed** — can name the inputs or state that trigger it and the resulting wrong outcome. Quotes the line.
+   - **Plausible** — the mechanism is real but the trigger is uncertain (timing, environment, config). States what would confirm it.
+   - **Refuted** — factually wrong (quote the actual line); provably impossible (show the type, constant, or invariant); already handled elsewhere (cite the guard); or pure style with no observable effect.
+
+   **The verifier inherits the finder's reference.** A verifier given only the diff cannot check a claim that was never about the diff, and will refute it for lack of evidence — which would destroy exactly the checks this skill is best at. So: intent-conformance candidates ship with the spec or plan excerpt; breaking-change candidates ship with the caller list from Step 3; duplication candidates ship with the incumbent symbol from Step 4b; convention candidates ship with the quoted rule and its source path. **No reference, no verdict** — a verifier that cannot check the claim returns Plausible, never Refuted.
+
+   **Plausible by default.** Do not refute a candidate for being "speculative" or "dependent on runtime state" when that state is realistic: concurrency races, nil on a rare-but-reachable path (error handler, cold cache, absent optional field), falsy-zero treated as missing, off-by-one on a boundary the code does not exclude, retry storms, partial failures, an allowlist that lost its anchor. Refute only what you can refute *from the code*.
+
+   Keep Confirmed and Plausible; drop Refuted. **The verdict is the `Confidence` value in the report schema** — never assert confidence without a verifier verdict behind it.
+
+   **Not verified:** Step 6 tool output. A linter error or a failing test is ground truth and goes straight to the report.
+
+   If the `Agent` tool is unavailable, verify each candidate yourself, sequentially, re-deriving it from its reference rather than from your earlier reasoning — and say in the report that verification was single-pass, so nobody is misled about what ran.
+
+8. **Synthesize & deliver** — group, dedupe, rank by severity. Tag each finding `scope: system` or `scope: code`. Output two severity-ordered lists: **System-level findings** then **Code-level findings**. Cap Low at 10 per lens and Medium at 15 per lens; if hit, emit a meta-finding noting the truncation. Critical/High are uncapped.
 
 ## False-Positive Markers
 
@@ -105,13 +151,13 @@ Undocumented suppressions stay at original severity — the absence of rationale
 - [Met | Unmet | Deviation | Scope-creep] <requirement or plan step> — <file:line or "not found">
 
 ## System-level Findings
-- [Severity · Confidence · root-cause|symptom] <Finding> — <file:line>
+- [Severity · Confirmed|Plausible · root-cause|symptom] <Finding> — <file:line>
   - Evidence: <snippet or reference>
   - Impact: <consequence>
   - Action: <fix> → <specialist>
 
 ## Code-level Findings
-- [Severity · Confidence · root-cause|symptom] <Finding> — <file:line>
+- [Severity · Confirmed|Plausible · root-cause|symptom] <Finding> — <file:line>
   - Evidence: <snippet>
   - Impact: <consequence>
   - Action: <fix> → <specialist>
@@ -163,3 +209,9 @@ The bad form is unusable: no file:line, no confidence, no scope, no evidence, no
 | Treating convention drift as a style nit | Convention drift is Medium, not Low |
 | Findings without file:line / evidence / specialist | Use the schema; ship the bad-finding form and the audit is wasted |
 | Honoring an undocumented `nolint` | Suppression without a stated reason stays at original severity |
+| **Asserting `Confidence` without a verifier verdict** | Run Step 7 — self-assessed confidence is the finder marking its own work |
+| **Searching for duplicates by name** | Duplicates rarely share a name with what they duplicate. Search by behavior (Step 4b) |
+| **"No existing equivalent found" with no searches named** | An unstated search is an unrun search. List what you ran |
+| **A duplication finding that names no incumbent** | Not a duplication finding. Drop it or downgrade to convention drift |
+| **Convention drift judged against taste** | Quote the rule and its source (Step 4a), or don't flag it |
+| **Refuting a candidate the verifier had no reference for** | No reference, no verdict — return Plausible, never Refuted |
