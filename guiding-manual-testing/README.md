@@ -1,4 +1,4 @@
-# guided-test
+# guiding-manual-testing
 
 A Claude Code skill for manually verifying a change against a real environment
 with real data. The agent guides one step at a time: it proposes a single
@@ -24,12 +24,13 @@ action, waits for the output, interprets it, and only then proposes the next.
   have to be observed before anything is called a pass.
 * **Real creation paths first.** Run the job or use the UI; direct database
   mutation is a fallback that must be justified.
-* **Restore point first.** The restoring statement is captured before the first
-  mutation, and blast radius is stated before any trigger.
+* **Restore point before direct mutation.** If data is mutated directly, the
+  restoring statement is captured first; data produced by running the real path
+  is left in place. Blast radius is stated before any trigger.
 
 ## Output
 
 A verification report delivered in the conversation: what was under test, the
 environment, the subject chosen and why, each case with its predicted and
-observed evidence, any unexpected observations as separate findings, and
-confirmation that cleanup restored the recorded state.
+observed evidence, any unexpected observations as separate findings, and, when
+data was mutated directly, confirmation that cleanup restored it.

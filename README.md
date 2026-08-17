@@ -18,6 +18,7 @@ focused instructions for a specific domain.
 | [analyze-code](analyze-code/) | Multi-lens audit of existing code across architecture, quality, performance, security, and style. Produces a prioritized findings report — a deep review, not a gate decision. |
 | [brainstorm](brainstorm/) | Turns vague ideas into concrete, validated specs through Socratic dialogue — one question at a time. No implementation until the design is approved. |
 | [coding-discipline](coding-discipline/) | Names the six most common LLM coding failure modes (silent assumption, scope creep, speculative complexity, hallucination, drift, parallel solution) and the counter-move for each. |
+| [guiding-manual-testing](guiding-manual-testing/) | Walks you through verifying a change by hand on a real environment (local or staging) with real data — one step at a time, you run it and paste the output back. Enforces a matched pair (the case that must change and the case that must not), predictions written before execution, and a restore point before any mutation. Report-only; never touches the environment itself. |
 | [knowledge-base](knowledge-base/) | User-curated, agent-maintained project wiki for system surfaces (entities, interfaces, jobs, dependencies, events, business rules), implementation plans, and plain-language operator manuals. Queryable on its own; the wiki and plans are consulted by `brainstorm`, `using-software-specialists`, and `analyze-code` when a `kb_path` is configured. |
 | [research](research/) | Answers questions about *your own codebase* — endpoints, event payloads, "what happens when X?", "how do I run X?" — by reading the actual source (serena + the KB), never from memory. Brings a sourced, cited answer instead of interrogating you; effort scales from a one-line lookup to a full traced investigation. External / best-practice questions are handed off to the `deep-research-agent` specialist. The inverse of `brainstorm`. |
 | [style-checker](style-checker/) | Reviews code against Google's official style guidelines. Produces a structured violation report grouped by severity (Critical / High / Medium / Low). Supports Go, Java, Python, JavaScript, TypeScript, Shell, and Markdown. |
@@ -30,7 +31,7 @@ focused instructions for a specific domain.
 Copy the skill directories you want into your Claude Code skills folder:
 
 ```bash
-cp -r analyze-code brainstorm coding-discipline knowledge-base research style-checker test-driven-development using-software-specialists writing-unit-tests ~/.claude/skills/
+cp -r analyze-code brainstorm coding-discipline guiding-manual-testing knowledge-base research style-checker test-driven-development using-software-specialists writing-unit-tests ~/.claude/skills/
 ```
 
 Skills are then available as slash commands in any Claude Code session:
@@ -39,6 +40,7 @@ Skills are then available as slash commands in any Claude Code session:
 /analyze-code
 /brainstorm
 /coding-discipline
+/guiding-manual-testing
 /knowledge-base
 /research
 /style-checker
@@ -99,6 +101,12 @@ The loop then closes through one of three back-edges:
 * **Bug surfaced during testing** → re-enter `/using-software-specialists`
   starting with Troubleshooter.
 
+`/guiding-manual-testing` is invoked on demand, when you want to confirm a change behaves
+correctly against real data before merging or releasing. It runs nothing itself —
+it proposes one action at a time, reads the output you paste back, and interprets
+it. A failed verification or an unexpected finding feeds the same back-edges as
+an audit.
+
 `/style-checker` is invoked on demand, or as the Style lens of every
 `/analyze-code` run (independent of whatever linter the project ships, which
 analyze-code runs separately as configured tooling).
@@ -127,6 +135,9 @@ flowchart TD
     AC -->|plan needs changes| BS
     AC -->|bug during testing| USS
     AC -->|clean| Ship([Ship])
+
+    USS -.->|on request| GT[guiding-manual-testing]
+    GT -->|bug proven| USS
 
     subgraph during [During the Implementation phase]
         CD[coding-discipline]
