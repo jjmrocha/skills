@@ -45,6 +45,8 @@ Backend and Frontend implementation can run in parallel against an agreed API co
 
 Forward lookup by task domain. "Start with" = lead mindset. "Then add" = complementary perspectives during/after implementation. "Before done" = validation gate, never skip.
 
+**Applying a specialist means reading its reference file first: `references/<specialist>.md`.** The name alone is not the specialist — the file carries its required sub-skills, focus areas, and red flags. Role-playing from the table row without reading the file is skipping the specialist.
+
 | Task | Start with | Then add | Before done |
 |------|-----------|----------|-------------|
 | Backend development (APIs, server logic, caching) | Backend Engineer | Tester | Security Engineer, Quality Engineer |
