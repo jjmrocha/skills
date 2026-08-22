@@ -18,6 +18,7 @@ focused instructions for a specific domain.
 | [analyze-code](analyze-code/) | Multi-lens audit of existing code across architecture, quality, performance, security, and style. Produces a prioritized findings report — a deep review, not a gate decision. |
 | [brainstorm](brainstorm/) | Turns vague ideas into concrete, validated specs through Socratic dialogue — one question at a time. No implementation until the design is approved. |
 | [coding-discipline](coding-discipline/) | Names the six most common LLM coding failure modes (silent assumption, scope creep, speculative complexity, hallucination, drift, parallel solution) and the counter-move for each. |
+| [designing-interfaces](designing-interfaces/) | Makes interface width visible before the implementation is written. Requires a four-line contract — what the caller must learn, what the module hides, where the seam is, what the test calls — and sends the design back when nothing is hidden. Counterweights `coding-discipline`'s minimality bias, which on its own selects for the shallower design. |
 | [guiding-manual-testing](guiding-manual-testing/) | Walks you through verifying a change by hand on a real environment (local or staging) with real data — one step at a time, you run it and paste the output back. Enforces a matched pair (the case that must change and the case that must not), predictions written before execution, and a restore point before any mutation. Report-only; never touches the environment itself. |
 | [knowledge-base](knowledge-base/) | User-curated, agent-maintained project wiki for system surfaces (entities, interfaces, jobs, dependencies, events, business rules), implementation plans, and plain-language operator manuals. Queryable on its own; the wiki and plans are consulted by `brainstorm`, `using-software-specialists`, and `analyze-code` when a `kb_path` is configured. |
 | [research](research/) | Answers questions about *your own codebase* — endpoints, event payloads, "what happens when X?", "how do I run X?" — by reading the actual source (serena + the KB), never from memory. Brings a sourced, cited answer instead of interrogating you; effort scales from a one-line lookup to a full traced investigation. External / best-practice questions are handed off to the `deep-research-agent` specialist. The inverse of `brainstorm`. |
@@ -31,7 +32,7 @@ focused instructions for a specific domain.
 Copy the skill directories you want into your Claude Code skills folder:
 
 ```bash
-cp -r analyze-code brainstorm coding-discipline guiding-manual-testing knowledge-base research style-checker test-driven-development using-software-specialists writing-unit-tests ~/.claude/skills/
+cp -r analyze-code brainstorm coding-discipline designing-interfaces guiding-manual-testing knowledge-base research style-checker test-driven-development using-software-specialists writing-unit-tests ~/.claude/skills/
 ```
 
 Skills are then available as slash commands in any Claude Code session:
@@ -40,6 +41,7 @@ Skills are then available as slash commands in any Claude Code session:
 /analyze-code
 /brainstorm
 /coding-discipline
+/designing-interfaces
 /guiding-manual-testing
 /knowledge-base
 /research
@@ -85,8 +87,9 @@ A typical feature-development loop using these skills:
    from any repo.
 2. **Build** — `/using-software-specialists` ingests the plan, validates it
    against the Plan-phase done-criteria, and implements. The Implementation
-   phase loads `coding-discipline` and `test-driven-development` (which pulls
-   in `writing-unit-tests`) before any code is written.
+   phase loads `designing-interfaces`, `coding-discipline`, and
+   `test-driven-development` (which pulls in `writing-unit-tests`) before any
+   code is written.
 3. **Audit** — `/analyze-code` reviews the result and produces a
    severity-ranked findings report with a *Suggested Next Actions* block
    that routes each finding cluster back to the right specialist.
@@ -106,6 +109,11 @@ correctly against real data before merging or releasing. It runs nothing itself 
 it proposes one action at a time, reads the output you paste back, and interprets
 it. A failed verification or an unexpected finding feeds the same back-edges as
 an audit.
+
+`/designing-interfaces` is loaded twice in the loop: during Implementation,
+before any interface is written, and again as part of the Quality lens of every
+`/analyze-code` run, where the same depth check is applied to interfaces the
+change already introduced.
 
 `/style-checker` is invoked on demand, or as the Style lens of every
 `/analyze-code` run (independent of whatever linter the project ships, which
@@ -140,6 +148,7 @@ flowchart TD
     GT -->|bug proven| USS
 
     subgraph during [During the Implementation phase]
+        DI[designing-interfaces]
         CD[coding-discipline]
         TDD[test-driven-development] --> WUT[writing-unit-tests]
     end
@@ -150,6 +159,7 @@ flowchart TD
     KB -.->|drift findings| AC
 
     AC -.->|style lens| SC[style-checker]
+    AC -.->|quality lens| DI
 ```
 
 ## License
