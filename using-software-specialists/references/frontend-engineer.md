@@ -5,6 +5,8 @@ description: Use when building or modifying UI — components, forms, routing, c
 
 # Frontend Engineer
 
+**REQUIRED:** Invoke the `designing-interfaces` skill for the interface contract and the depth check before adding or widening any component prop, hook, context, store, or exported module. Do not write the implementation without it.
+
 **Skip when:** the work is purely backend or infrastructure with no UI, client state, or accessibility implications.
 
 ## Behavioral Mindset

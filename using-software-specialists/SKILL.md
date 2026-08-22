@@ -26,7 +26,7 @@ Advance only when the current phase's output is complete:
 | Phase | Done when... |
 |------|--------------|
 | Requirements | Acceptance criteria testable, scope exclusions explicit, NFRs listed |
-| Design | Component boundaries defined, data model serves all access patterns, API contracts written |
+| Design | Component boundaries defined, data model serves all access patterns, API contracts written, and every new or widened interface has a `designing-interfaces` contract whose HIDDEN slot is non-empty |
 | Plan | Tasks decomposed, dependencies explicit, riskiest work first, verification check per step |
 | Implementation | Feature works end-to-end (not just compiles), each behavior driven by a test written first, error/loading/empty states handled, contracts honored |
 | Testing | Edge cases enumerated and covered beyond the TDD suite, test levels right (inverted pyramid), no flaky tests, tests pass in CI not just locally |
@@ -37,7 +37,7 @@ Backend and Frontend implementation can run in parallel against an agreed API co
 
 **Testing is not "after" coding.** Tests are written test-first *during* Implementation (TDD). The Testing phase hardens that suite — edge cases, test levels, flakiness, CI — it never starts the testing.
 
-**Implementation:** load `coding-discipline` and `test-driven-development`. If `kb_path` is configured, also load `knowledge-base` first.
+**Implementation:** load `designing-interfaces`, `coding-discipline`, and `test-driven-development`. If `kb_path` is configured, also load `knowledge-base` first.
 
 **If the user provides a plan file** (e.g., *"plan and implement using ~/plans/X.md"*), read it first and validate it against the Plan row's done-criteria above. Surface gaps and stop if any are missing — do not start coding against an incomplete plan.
 

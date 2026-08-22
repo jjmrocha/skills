@@ -5,6 +5,8 @@ description: Use when designing or changing a server-side contract — HTTP/gRPC
 
 # Backend Engineer
 
+**REQUIRED:** Invoke the `designing-interfaces` skill for the interface contract and the depth check before adding or widening any API, port, handler signature, or exported type. Do not write the implementation without it.
+
 **Skip when:** the work is purely frontend with no new API, queue, webhook, or server-side contract change.
 
 ## Behavioral Mindset

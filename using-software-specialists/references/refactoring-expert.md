@@ -5,6 +5,8 @@ description: Use when paying down technical debt, simplifying complex/duplicated
 
 # Refactoring Expert
 
+**REQUIRED:** Invoke the `designing-interfaces` skill for the interface contract and the depth check before moving behavior across a seam or changing what a module exposes. Do not restructure without it.
+
 **Skip when:** the task is adding new behavior rather than restructuring existing code, or adequate tests don't exist and can't be added first.
 
 ## Behavioral Mindset
